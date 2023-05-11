@@ -1,0 +1,88 @@
+```{r}
+library(ade4)
+library(ggbiplot)
+library(viridis)
+d3 = read.csv("Gender_equity.csv")
+head(d3)
+data = na.omit(d3)
+
+#d3[is.na(d3)] <- 0
+
+#data = d3
+head(data)
+
+summary(data)
+
+
+```
+
+
+```{r}
+library(ggrepel)
+library(dplyr)
+
+#data = data %>% mutate(region_name = case_when(region == 1 ~ 'Northeast',
+#                                        region == 2 ~ 'Midwest',
+#                                        region == 3 ~ 'South',
+#                                        region == 4 ~ 'West'))
+row_rem <- which(data[2]!='Man' & data[2]!='Woman')
+
+data_new <- subset(data, !(row.names(data) %in% row_rem))
+
+```
+```{r}
+
+data_comp <- data_new[grep("-", data_new$Compensation), ]
+data_comp$Compensation <- gsub("\\$", "", data_comp$Compensation)
+data_comp$Compensation <- gsub(",", "", data_comp$Compensation)
+data_comp$comp1 <- sapply(strsplit(as.character(data_comp$Compensation), "-"), "[", 1)
+data_comp$comp2 <- sapply(strsplit(as.character(data_comp$Compensation), "-"), "[", 2)
+data_comp$comp1 <- as.numeric(data_comp$comp1)
+data_comp$comp2 <- as.numeric(data_comp$comp2)
+data_comp <- data_comp %>% mutate(avg_comp = as.integer(rowMeans(select(., c(comp1, comp2)), na.rm = TRUE)))
+data_comp
+data_comp$avg_comp <- cut(data_comp$avg_comp, breaks = c(0, 50000, 200000, 400000, 750000), labels = c("L", "M-", "M+" ,"H"))
+
+```
+
+```{r}
+data_comp = data_comp %>% mutate(degree = case_when(Degree == 'Master’s degree' ~ 'Mas',
+                                        Degree == 'Bachelor’s degree' ~ 'Bach',
+                                        Degree == 'Some college/university study without earning a bachelor’s degree' ~ 'NB',
+                                        Degree == 'Doctoral degree' ~ 'Doc',
+                                        Degree == 'I prefer not to answer' ~ 'NA',
+                                        Degree == 'Professional doctorate' ~ 'PD',
+                                        Degree == 'No formal education past high school' ~ 'NU',
+                                        Degree == '' ~ 'NA'))
+
+library(vcd)
+mosaic(~ Student + Gender, data = data_new, gp = shading_max)
+mosaic(~ avg_comp + degree, data = data_comp, gp = shading_max)
+#doubledecker(Degree ~ Age + Gender, data = data)
+```
+
+
+
+```{r}
+
+#ggplot(data_comp) + geom_point(aes(x = Gender, y = avg_comp)) + theme(axis.text.x = element_text(angle = 90))
+ggplot(data_comp, aes(x = avg_comp, y = Country, fill = Gender)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(x = "Average compensation", y = "Country", fill = "Gender") +
+  ggtitle("Grouped Bar Graph") +
+  theme_minimal()
+
+ggplot(data_comp, aes(x = degree, y = Age, fill = Gender)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(x = "Degree", y = "Age", fill = "Gender") +
+  ggtitle("Grouped Bar Graph") +
+  theme_minimal()
+
+ggplot(data_comp, aes(x = Programming_years, y = avg_comp, fill = Gender)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(x = "Degree", y = "Age", fill = "Gender") +
+  ggtitle("Grouped Bar Graph") +
+  theme_minimal()
+
+```
+
